@@ -167,7 +167,7 @@ local speed = 50
 
 -- Camera rotation variables
 local cameraYaw = 0
-local cameraPitch = math.rad(-20) -- slight downward angle
+local cameraPitch = math.rad(-20)
 local cameraDistance = 15
 local isRotating = false
 local lastTouchPosition = Vector2.new()
@@ -218,9 +218,22 @@ local function updateSpeedDisplay()
 	speedLabel.Text = "SPEED: " .. math.floor(speed)
 end
 
--- Control button click
+-- Fungsi untuk menginisialisasi sudut kamera dari posisi sekarang
+local function initializeCameraAngles()
+	local ballPos = ball.Position
+	local camPos = camera.CFrame.Position
+	local direction = (camPos - ballPos).Unit
+	cameraYaw = math.atan2(direction.X, direction.Z)
+	cameraPitch = math.asin(-direction.Y)
+	cameraDistance = math.clamp((camPos - ballPos).Magnitude, 5, 30)
+end
+
+-- Control button click (PERBAIKAN DI SINI)
 controlButton.MouseButton1Click:Connect(function()
 	controlling = not controlling
+	if controlling then
+		initializeCameraAngles() -- ambil sudut pandang saat ini
+	end
 	updateControlButton()
 end)
 
@@ -255,13 +268,11 @@ UserInputService.InputChanged:Connect(function(input, gameProcessed)
 		local delta = input.Position - lastTouchPosition
 		
 		if input.UserInputType == Enum.UserInputType.Touch then
-			-- Mobile swipe for camera rotation
 			local sensitivity = 0.005
 			cameraYaw = cameraYaw - delta.X * sensitivity
 			cameraPitch = math.clamp(cameraPitch - delta.Y * sensitivity, math.rad(-80), math.rad(80))
 			lastTouchPosition = input.Position
 		elseif input.UserInputType == Enum.UserInputType.MouseMovement then
-			-- Desktop right-click drag for camera rotation
 			local sensitivity = 0.003
 			cameraYaw = cameraYaw - delta.X * sensitivity
 			cameraPitch = math.clamp(cameraPitch - delta.Y * sensitivity, math.rad(-80), math.rad(80))
@@ -269,7 +280,6 @@ UserInputService.InputChanged:Connect(function(input, gameProcessed)
 		end
 	end
 	
-	-- Mouse wheel for camera distance (desktop only)
 	if input.UserInputType == Enum.UserInputType.MouseWheel and controlling then
 		cameraDistance = math.clamp(cameraDistance - input.Position.Z * 0.5, 5, 30)
 	end
@@ -282,22 +292,9 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- Initialize camera yaw based on current camera position
-local function initializeCameraAngles()
-	local ballPos = ball.Position
-	local camPos = camera.CFrame.Position
-	local direction = (camPos - ballPos).Unit
-	cameraYaw = math.atan2(direction.X, direction.Z)
-	cameraPitch = math.asin(-direction.Y)
-	cameraDistance = (camPos - ballPos).Magnitude
-end
-
 -- Initialize toggle button
 toggleButton.Visible = true
 screenGui.Enabled = true
-
--- Initialize camera when ball is found
-initializeCameraAngles()
 
 -- Main game loop
 RunService.RenderStepped:Connect(function()
